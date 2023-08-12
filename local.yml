@@ -1,10 +1,5 @@
 version: '3'
 
-volumes:
-  production_traefik: {}
-  db_data: {}
-  nginx_logs: {} 
-
 services:
   db:
     image: mysql:5.7
@@ -22,7 +17,9 @@ services:
   wordpress:
     depends_on:
       - db
-    image: wordpress:latest
+    build:
+      context: .
+      dockerfile: ./config/wordpress_config/Dockerfile
     volumes:
       - ./wordpress:/var/www/html
     restart: always
@@ -31,5 +28,20 @@ services:
       WORDPRESS_DB_USER: inmopageuser
       WORDPRESS_DB_PASSWORD: web2023
       WORDPRESS_DB_NAME: inmopage
-    ports:
-      - 80:80
+    expose:
+      - 9000
+
+  nginx:
+      depends_on:
+        - wordpress
+      build:
+        context: .
+        dockerfile: ./config/nginx/Dockerfile
+      volumes:
+        - ./wordpress:/var/www/html
+      ports:
+        - 80:80
+        - 443:443
+
+volumes:
+  db_data: {}
