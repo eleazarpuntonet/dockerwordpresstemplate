@@ -22,9 +22,7 @@ services:
   wordpress:
     depends_on:
       - db
-    build:
-      context: .
-      dockerfile: ./wordpress_config/Dockerfile
+    image: wordpress:latest
     volumes:
       - ./wordpress:/var/www/html
     restart: always
@@ -34,30 +32,15 @@ services:
       WORDPRESS_DB_PASSWORD: web2023
       WORDPRESS_DB_NAME: inmopage
     expose:
-      - 9000
-
-  nginx:
-    depends_on:
-      - wordpress
-    build:
-      context: .
-      dockerfile: ./server/Dockerfile
-    volumes:
-      - ./wordpress:/var/www/html
-    expose:
       - 80
-    # ports:
-      # - 80:80
-    #   - 443:443
 
   traefik:
     build:
       context: .
-      dockerfile: ./compose/production/traefik/Dockerfile
+      dockerfile: ./traefik/Dockerfile
     image: transcarapi_production_traefik
     depends_on:
       - wordpress
-      - nginx
       - db
     volumes:
       - production_traefik:/etc/traefik/acme
