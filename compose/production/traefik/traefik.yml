@@ -1,19 +1,27 @@
 log:
-  level: INFO  # Nivel de registro de información
+  level: INFO  
+  format: common
+  filePath: /var/log/traefik/traefik.log
+
+
+accesslog:
+  format: common
+  filePath: /var/log/traefik/access.log
 
 entryPoints:
   web:
     # http
     address: ':80'
-    # http:
       # https://docs.traefik.io/routing/entrypoints/#entrypoint
-      # redirections:
-      #   entryPoint:
-      #     to: web-secure
+      redirections:
+        entryPoint:
+          to: web-secure
 
   web-secure:
-    # https
     address: ':443'  
+
+  wordpress-db:
+    address: ':3306'  
 
 
 certificatesResolvers:
@@ -35,11 +43,24 @@ http:
       tls:
         certResolver: letsencrypt 
 
+    wordpress-db-router:
+      rule: 'Host(`54.224.246.216`)' 
+      entryPoints:
+        - wordpress-db
+      service: db  
+
+
   services:
     nginx:
       loadBalancer:
         servers:
           - url: http://nginx:80
+
+    db:
+      loadBalancer:
+        servers:
+          - url: http://db:3306
+
 providers:
   file:
     filename: /etc/traefik/traefik.yml  
