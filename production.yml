@@ -1,0 +1,66 @@
+version: '3'
+
+volumes:
+  production_traefik: {}
+  db_data: {}
+  nginx_logs: {} 
+
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Web2023##
+      MYSQL_DATABASE: inmopage
+      MYSQL_USER: inmopageuser
+      MYSQL_PASSWORD: web2023
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+  wordpress:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: ./wordpress_config/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: inmopageuser
+      WORDPRESS_DB_PASSWORD: web2023
+      WORDPRESS_DB_NAME: inmopage
+    expose:
+      - 9000
+
+  nginx:
+    depends_on:
+      - wordpress
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
+    expose:
+      - 80
+    # ports:
+      # - 80:80
+    #   - 443:443
+
+  traefik:
+    build:
+      context: .
+      dockerfile: ./compose/production/traefik/Dockerfile
+    image: transcarapi_production_traefik
+    depends_on:
+      - wordpress
+      - nginx
+      - db
+    volumes:
+      - production_traefik:/etc/traefik/acme
+    ports:
+      - '0.0.0.0:80:80'
+      - '0.0.0.0:443:443'

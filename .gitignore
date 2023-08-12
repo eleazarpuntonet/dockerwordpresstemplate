@@ -1,0 +1,8 @@
+
+/wordpress
+/.vscode
+/mysql_data/mysql.sock
+/mysql_data/private_key.pem
+/mysql_data/ca-key.pem
+/mysql_data
+/traefik/acme/acme.json

@@ -1,0 +1,47 @@
+log:
+  level: INFO  # Nivel de registro de información
+
+entryPoints:
+  web:
+    # http
+    address: ':80'
+    # http:
+      # https://docs.traefik.io/routing/entrypoints/#entrypoint
+      # redirections:
+      #   entryPoint:
+      #     to: web-secure
+
+  web-secure:
+    # https
+    address: ':443'  # Punto de entrada para el protocolo HTTPS en el puerto 443
+
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: 'eleazar.sb18@gmail.com'  # Correo electrónico para la cuenta de Let's Encrypt
+      storage: /etc/traefik/acme/acme.json  # Ubicación donde se almacenarán los certificados generados
+      httpChallenge:
+        entryPoint: web  # Desafío de HTTP utilizado para validar la propiedad del dominio
+
+http:
+  routers:
+    web-secure-router:
+      rule: 'Host(`inmopage.duckdns.org`)' 
+      entryPoints:
+        - web  # Punto de entrada para HTTPS
+        - web-secure  # Punto de entrada para HTTPS
+      service: nginx  # Servicio al que se enrutan las solicitudes
+      tls:
+        certResolver: letsencrypt  # Resolvedor de certificados utilizado para obtener certificados Let's Encrypt
+
+  services:
+    nginx:
+      loadBalancer:
+        servers:
+          - url: http://nginx:80  # URL del servicio Django
+
+providers:
+  file:
+    filename: /etc/traefik/traefik.yml  # Archivo de configuración de Traefik
+    watch: true  # Habilitar la vigilancia de cambios en el archivo de configuración

@@ -1,0 +1,181 @@
+version: '3'
+
+volumes:
+  production_traefik: {}
+  db_data: {}
+  nginx_logs: {} 
+
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Web2023##
+      MYSQL_DATABASE: inmopage
+      MYSQL_USER: inmopageuser
+      MYSQL_PASSWORD: web2023
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - '3306:3306'  # Asegúrate de que el puerto 3306 esté mapeado correctamente
+
+  wordpress:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: ./wordpress_config/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: inmopageuser
+      WORDPRESS_DB_PASSWORD: web2023
+      WORDPRESS_DB_NAME: inmopage
+    expose:
+      - 9000
+
+  nginx:
+      depends_on:
+        - wordpress
+      build:
+        context: .
+        dockerfile: ./server/Dockerfile
+      volumes:
+        - ./wordpress:/var/www/html
+        - ./server/logs:/var/log/nginx  # Mount local folder for Nginx logs
+
+  traefik:
+    build:
+      context: .
+      dockerfile: ./compose/production/traefik/Dockerfile
+    image: transcarapi_production_traefik
+    depends_on:
+      - wordpress
+      - nginx
+      - db
+    volumes:
+      - production_traefik:/etc/traefik/acme
+    ports:
+      - '0.0.0.0:80:80'
+      - '0.0.0.0:443:443'
+      # - '0.0.0.0:3306:3306'
+
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ':80'
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: web-secure
+
+  web-secure:
+    address: ':443' 
+
+  # db:
+  #   address: ':3306'
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: 'eleazar.sb18@gmail.com'
+      storage: /etc/traefik/acme/acme.json
+      httpChallenge:
+        entryPoint: web 
+
+http:
+  routers:
+    web-secure-router:
+      rule: 'Host(`inmopage.duckdns.org`)'
+      entryPoints:
+        - web-secure  
+      service: nginx
+      tls:
+        certResolver: letsencrypt  
+
+    # db-secure-router:
+    #   rule: 'Host(`inmosql.duckdns.org`)' 
+    #   entryPoints:
+    #     - db 
+    #   service: db  
+    #   tls:
+    #     certResolver: letsencrypt  
+
+  services:
+    nginx:
+      loadBalancer:
+        servers:
+          - url: http://nginx:80  
+    # db:
+    #   loadBalancer:
+    #     servers:
+    #       - url: http://db:3306
+
+
+providers:
+  file:
+    filename: /etc/traefik/traefik.yml  
+    watch: true 
+
+
+
+# Dockerfile NGINX
+FROM nginx:latest
+
+
+# Eliminar el archivo de configuración predeterminado de Nginx
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Agregar nuestro archivo de configuración de Nginx
+COPY ./server/nginx.conf /etc/nginx/conf.d/
+
+# Create log directory and set permissions
+RUN mkdir -p /var/log/nginx && \
+    touch /var/log/nginx/access.log && \
+    touch /var/log/nginx/error.log && \
+    chmod -R 777 /var/log/nginx
+
+
+server {
+    listen 80;
+    server_name nginx;
+
+    root /var/www/html;
+    index index.php index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass wordpress:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location = /favicon.ico {
+        log_not_found off;
+        access_log off;
+    }
+
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+    }
+
+    location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+        expires max;
+        log_not_found off;
+    }
+}
