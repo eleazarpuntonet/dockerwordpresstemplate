@@ -1,13 +1,8 @@
 soy_admin
 TresTristesTigr3$_2023
 
+inmobapp
+admin@admin.com
+Inm0bappL0gin4piUzer
 
-/**
- * Handle SSL reverse proxy
- */
-if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-    $_SERVER['HTTPS']='on';
-
-if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
-    $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_FORWARDED_HOST'];
-}
+http://localhost/index.php?rest_route=/
