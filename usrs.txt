@@ -1,8 +1,3 @@
-soy_admin
-TresTristesTigr3$_2023
-
-inmobapp
-admin@admin.com
-Inm0bappL0gin4piUzer
-
+eleazar_ortega
+LotoWeb616Portafolio2024**
 http://localhost/index.php?rest_route=/

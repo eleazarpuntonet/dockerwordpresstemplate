@@ -1,5 +1,6 @@
 
 /wordpress
+/wordpress_portafolio
 /.vscode
 /mysql_data/mysql.sock
 /mysql_data/private_key.pem

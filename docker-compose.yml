@@ -1,0 +1,76 @@
+version: '3'
+
+networks:
+  local-network:
+    external: true
+
+services:
+  wordpress_db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Web2023##
+      MYSQL_DATABASE: portafolio_2024
+      MYSQL_USER: eleazar_ortega
+      MYSQL_PASSWORD: web2023
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - local-network
+
+  wordpress_portafolio:
+    depends_on:
+      - wordpress_db
+    build:
+      context: .
+      dockerfile: ./config/wordpress_config/Dockerfile
+    volumes:
+      - ./wordpress_portafolio:/var/www/html
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: wordpress_db:3306
+      WORDPRESS_DB_USER: eleazar_ortega
+      WORDPRESS_DB_PASSWORD: Web2023
+      # WORDPRESS_DB_PASSWORD: Web2023##
+      WORDPRESS_DB_NAME: portafolio_2024
+    expose:
+      - 9000
+    networks:
+      - local-network
+
+  nginx_portafolio:
+    depends_on:
+      - wordpress_portafolio
+    build:
+      context: .
+      dockerfile: ./config/nginx/Dockerfile
+    volumes:
+      - ./wordpress_portafolio:/var/www/html
+    expose:
+      - 80
+      - 443
+    networks:
+      - local-network
+
+  traefik:
+    build:
+      context: .
+      dockerfile: ./config/traefik/Dockerfile
+    image: wordpress_production_traefik
+    depends_on:
+      - nginx_portafolio
+      - wordpress_portafolio
+    volumes:
+      - production_traefik:/etc/traefik/acme
+    ports:
+      - '0.0.0.0:80:80'
+      - '0.0.0.0:443:443'
+    networks:
+      - local-network
+
+volumes:
+  production_traefik: {}
+  db_data: {}
+  nginx_logs: {} 
