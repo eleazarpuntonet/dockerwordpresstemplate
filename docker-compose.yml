@@ -20,6 +20,26 @@ services:
     networks:
       - local-network
 
+  wordpress_cv_2024:
+    depends_on:
+      - wordpress_db
+    build:
+      context: .
+      dockerfile: ./config/wordpress_config/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: wordpress_db:3306
+      WORDPRESS_DB_USER: eleazar_ortega
+      WORDPRESS_DB_PASSWORD: Web2023
+      # WORDPRESS_DB_PASSWORD: Web2023##
+      WORDPRESS_DB_NAME: cv_2024
+    expose:
+      - 9000
+    networks:
+      - local-network
+
   wordpress_portafolio:
     depends_on:
       - wordpress_db
@@ -48,6 +68,22 @@ services:
       dockerfile: ./config/nginx/Dockerfile
     volumes:
       - ./wordpress_portafolio:/var/www/html
+      - /etc/letsencrypt/:/etc/letsencrypt/
+    expose:
+      - 80
+      - 443
+    networks:
+      - local-network
+
+
+  nginx_cv_2024:
+    depends_on:
+      - wordpress_cv_2024
+    build:
+      context: .
+      dockerfile: ./config/nginx_cv_2024/Dockerfile
+    volumes:
+      - ./wordpress:/var/www/html
     expose:
       - 80
       - 443
